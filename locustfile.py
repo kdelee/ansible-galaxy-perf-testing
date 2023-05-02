@@ -1,27 +1,23 @@
 import subprocess
 import time
 import os
+import uuid
 
 from locust import User, between, TaskSet, task, events
 
-def execute_galaxy(collection="awx.awx", volume_mount=f"{os.getcwd()}/config", se_linux_relabel=':z', image="registry.redhat.io/ansible-automation-platform-23/ee-29-rhel8"):
+def execute_galaxy(collection_dir=".", collection="awx.awx"):
     process = subprocess.Popen([
-            "podman",
-            "run",
-            "--rm",
-            "-v",
-            f"{volume_mount}:/etc/ansible/{se_linux_relabel}", #FIXME: make configurable , /home/kdelee/foo is where I have my ansible.cfg
-            image, #FIXME: make this configurable
             "ansible-galaxy",
             "collection",
             "install",
+            "-p",
+            collection_dir,
             collection],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
             )
     stdout, stderr = process.communicate()
     assert process.returncode == 0, stderr
-    assert "was installed successfully" in str(stdout)
     return process
 
 class GalaxyClient:
@@ -29,6 +25,8 @@ class GalaxyClient:
     def __getattr__(self, name):
         def wrapper(*args, **kwargs):
             start_time = time.time()
+            collection_dir = f"collection_download_{uuid.uuid4()}"
+            kwargs["collection_dir"] = collection_dir
             exception = None # if no error, no exception
             res = None # if error, no res from execute_galaxy
             try:
@@ -46,7 +44,14 @@ class GalaxyClient:
                 context=None,
                 exception=exception,
             )
-
+            rm_process = subprocess.Popen([
+                "rm",
+                "-rf",
+                collection_dir],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            rm_process.communicate()
         return wrapper
 
 # This class will be executed when you fire up locust
