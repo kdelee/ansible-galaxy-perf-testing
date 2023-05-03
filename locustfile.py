@@ -17,7 +17,7 @@ def execute_galaxy(collection_dir=".", collection="awx.awx"):
             stderr=subprocess.PIPE
             )
     stdout, stderr = process.communicate()
-    assert process.returncode == 0, f"ERROR: {str(stderr).split("ERROR")[-1]}"
+    assert process.returncode == 0, f'ERROR: {str(stderr).split("ERROR")[-1]}'
     return process
 
 class GalaxyClient:
