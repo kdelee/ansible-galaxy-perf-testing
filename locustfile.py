@@ -2,22 +2,26 @@ import subprocess
 import time
 import os
 import uuid
+import random
 
 from locust import User, between, TaskSet, task, events
 
-def execute_galaxy(collection_dir=".", collection="awx.awx"):
+def execute_galaxy(collection_dir=".", collections=["community.crypto", "awx.awx", "ansible.windows", "kubernetes.core", "ansible.utils", "community.docker",
+                                                   "ansible.netcommon", "amazon.aws", "ansible.posix", "community.general", "arista.avd", "borari.pentesting_collection",
+                                                   "dkraklan.terraform_vmware_vm", "sabyadi.zhmc", "itsbryantp.zos_test", "ibm.zos_package_manager", 
+                                                   "elfelip.keycloak", "joej164.ansible_sample_collection", "jiholland.cisco", "ephracis.doksi"]):
     process = subprocess.Popen([
             "ansible-galaxy",
             "collection",
             "install",
             "-p",
             collection_dir,
-            collection],
+            random.choice(collections)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
             )
     stdout, stderr = process.communicate()
-    assert process.returncode == 0, f'ERROR: {str(stderr).split("ERROR")[-1]}'
+    assert process.returncode == 0, f'ERROR: {str(stderr).split("ERROR")[-1].strip()}'
     return process
 
 class GalaxyClient:
@@ -65,4 +69,4 @@ class GalaxyUser(User):
 
     @task
     def execute_galaxy_task1(self):
-        self.client.execute_galaxy(collection="awx.awx")
+        self.client.execute_galaxy()
